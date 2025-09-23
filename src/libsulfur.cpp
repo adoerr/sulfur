@@ -1,7 +1,6 @@
-import std
+#include<iostream>
+#include <libsulfur/libsulfur.hpp>
 
-#include <lubsulfur/ibsulfur.hpp>
-
-void libsulfur_hello() {
-    println("Hello from libsulfur!")
+void sulfur::hello() {
+    std::cout << "Hello, Sulfur!\n";
 }
