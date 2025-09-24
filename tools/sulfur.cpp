@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string_view>
 #include <sys/ptrace.h>
+#include <sys/wait.h>
 
 namespace {
     /**
@@ -14,7 +15,7 @@ namespace {
       *
       * @return The PID of the attached or forked process, or -1 on failure.
     */
-    pid_t attach(int argc, const char** argv) {
+    pid_t attach(const int argc, const char** argv) {
         pid_t pid{0};
 
         if (argc == 3 && argv[1] == std::string_view{"-p"}) {
@@ -31,7 +32,7 @@ namespace {
             }
         }
         else {
-            if (pid = fork() < 0) {
+            if ((pid = fork() < 0)) {
                 std::perror("Fork failed");
                 return -1;
             }
@@ -55,11 +56,19 @@ namespace {
     }
 }
 
-int main(int argc, const char** argv) {
+int main(const int argc, const char** argv) {
     if (argc == 1) {
         std::cerr << "Arguments missing" << std::endl;
         return -1;
     }
 
-    pid_t pid = attach(argc, argv);
+    const pid_t pid = attach(argc, argv);
+
+    // wait for the inferior to stop after attach
+    int status{0};
+
+    if (constexpr int options{0}; waitpid(pid, &status, options) < 0) {
+        std::perror("Waitpid failed");
+        return -1;
+    }
 }
