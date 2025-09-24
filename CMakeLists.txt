@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.28)
 
 project("sulfur" LANGUAGES CXX)
 
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(libedit REQUIRED IMPORTED_TARGET libedit)
+
 include(CTest)
 
 add_subdirectory("src")
