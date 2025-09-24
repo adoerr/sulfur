@@ -1,4 +1,5 @@
 add_library(libsulfur libsulfur.cpp)
+
 add_library(sulfur::libsulfur ALIAS libsulfur)
 
 set_target_properties(
