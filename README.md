@@ -10,7 +10,7 @@
 
 <br>
 
-'sulfur' is an experimental debugger
+`sulfur` is an experimental debugger
 
 <br>
 
