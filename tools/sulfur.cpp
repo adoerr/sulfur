@@ -5,6 +5,10 @@
 #include <sys/wait.h>
 #include <editline/readline.h>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+#include <ranges>
 
 namespace {
     /**
@@ -57,8 +61,60 @@ namespace {
         return pid;
     }
 
-    void run_command(pid_t pid, std::string_view line) {
-        std::cerr << line << std::endl;
+    /**
+     * Splits a command into tokens based on a specified delimiter.
+     *
+     * @param cmd The input command to be split.
+     * @param delim The character used as the delimiter to split the string.
+     * @return A `std::vector<std::string>` containing the tokens extracted from the input string.
+     *
+     * Split the input string `cmd` into tokens using the specified `delim` character. Tokens are stored in a vector and returned.
+     */
+    std::vector<std::string> split(const std::string_view cmd, char delim) {
+        std::vector<std::string> tokens{};
+        std::stringstream ss{std::string{cmd}};
+        std::string item;
+
+        while (std::getline(ss, item, delim)) {
+            tokens.push_back(item);
+        }
+
+        return tokens;
+    }
+
+    bool is_prefix(const std::string_view str, const std::string_view of) {
+        return str.size() <= of.size() &&
+            std::ranges::equal(str, of | std::views::take(str.size()));
+    }
+
+    void resume(const pid_t pid) {
+        if (ptrace(PTRACE_CONT, pid, nullptr, nullptr) < 0) {
+            std::cerr << "Failed to resume process" << std::endl;
+            std::exit(-1);
+        }
+    }
+
+    void wait_on_signal(const pid_t pid) {
+        int status{0};
+        int options{0};
+
+        if (waitpid(pid, &status, options) < 0) {
+            std::perror("waitpid failed");
+            std::exit(-1);
+        }
+    }
+
+    void run_command(const pid_t pid, const std::string_view line) {
+        const auto args = split(line, ' ');
+        const auto& command = args[0];
+
+        if (is_prefix(command, "continue")) {
+            resume(pid);
+            wait_on_signal(pid);
+        }
+        else {
+            std::cerr << "Unknown command: " << command << std::endl;
+        }
     }
 }
 

@@ -41,6 +41,7 @@
 *.dwo
 
 **/build
+**/build.debug
 
 # Ignore CLion project files
 **/.idea
