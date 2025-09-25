@@ -3,6 +3,8 @@
 #include <string_view>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
+#include <editline/readline.h>
+#include <string>
 
 namespace {
     /**
@@ -54,6 +56,10 @@ namespace {
 
         return pid;
     }
+
+    void run_command(pid_t pid, std::string_view line) {
+        std::cerr << line << std::endl;
+    }
 }
 
 int main(const int argc, const char** argv) {
@@ -70,5 +76,28 @@ int main(const int argc, const char** argv) {
     if (constexpr int options{0}; waitpid(pid, &status, options) < 0) {
         std::perror("Waitpid failed");
         return -1;
+    }
+
+    char* line{nullptr};
+
+    while ((line = readline("sulfur> ")) != nullptr) {
+        std::string line_str;
+
+        // an empty line means to repeat the last command
+        if (line == std::string_view("")) {
+            free(line);
+            if (history_length > 0) {
+                line_str = history_list()[history_length - 1]->line;
+            }
+        }
+        else {
+            line_str = line;
+            add_history(line);
+            free(line);
+        }
+
+        if (!line_str.empty()) {
+            run_command(pid, line_str);
+        }
     }
 }
