@@ -42,3 +42,23 @@ std::unique_ptr<sulfur::process> sulfur::process::attach(const pid_t pid) {
 
     return proc;
 }
+
+sulfur::process::~process() {
+    if (pid_ != 0) {
+        int status;
+
+        // for PTRACE_DETACH to work, the process must be stopped
+        if (state_ == process_state::running) {
+            kill(pid_, SIGSTOP);
+            waitpid(pid_, &status, 0);
+        }
+
+        ptrace(PTRACE_DETACH, pid_, nullptr, nullptr);
+        kill(pid_, SIGCONT);
+
+        if (terminate_on_end_) {
+            kill(pid_, SIGKILL);
+            waitpid(pid_, &status, 0);
+        }
+    }
+}
