@@ -16,8 +16,8 @@ namespace sulfur {
     public:
         ~process();
 
-        static std::unique_ptr<process> launch(std::filesystem::path path);
-        static std::unique_ptr<process> attach(pid_t pid);
+        static std::unique_ptr<process> launch(const std::filesystem::path& path);
+        static std::unique_ptr<process> attach(const pid_t pid);
 
         void resume();
         void wait_on_signal();
