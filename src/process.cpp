@@ -3,7 +3,7 @@
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <stdio.h>
+#include <cstdio>
 
 std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::path& path) {
     pid_t pid{};
@@ -61,4 +61,12 @@ sulfur::process::~process() {
             waitpid(pid_, &status, 0);
         }
     }
+}
+
+void sulfur::process::resume() {
+    if (ptrace(PTRACE_CONT, pid_, nullptr, nullptr) < 0) {
+        error::send_errno("ptrace continue failed");
+    }
+
+    state_ = process_state::running;
 }
