@@ -5,6 +5,21 @@
 #include <sys/wait.h>
 #include <cstdio>
 
+sulfur::stop_reason::stop_reason(const int wait_status) {
+    if (WIFEXITED(wait_status)) {
+        reason = process_state::exited;
+        info = WEXITSTATUS(wait_status);
+    }
+    else if (WIFSIGNALED(wait_status)) {
+        reason = process_state::terminated;
+        info = WTERMSIG(wait_status);
+    }
+    else if (WIFSTOPPED(wait_status)) {
+        reason = process_state::stopped;
+        info = WSTOPSIG(wait_status);
+    }
+}
+
 std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::path& path) {
     pid_t pid{};
 
@@ -69,4 +84,16 @@ void sulfur::process::resume() {
     }
 
     state_ = process_state::running;
+}
+
+sulfur::stop_reason sulfur::process::wait_on_signal() {
+    int status{0};
+
+    if (constexpr int options{0}; waitpid(pid_, &status, options) < 0) {
+        error::send_errno("waitpid failed");
+    }
+
+    const stop_reason reason(status);
+    state_ = reason.reason;
+    return reason;
 }

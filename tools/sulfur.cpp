@@ -96,9 +96,8 @@ namespace {
 
     void wait_on_signal(const pid_t pid) {
         int status{0};
-        int options{0};
 
-        if (waitpid(pid, &status, options) < 0) {
+        if (constexpr int options{0}; waitpid(pid, &status, options) < 0) {
             std::perror("waitpid failed");
             std::exit(-1);
         }
