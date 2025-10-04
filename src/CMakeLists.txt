@@ -1,4 +1,4 @@
-add_library(libsulfur process.cpp)
+add_library(libsulfur process.cpp pipe.cpp)
 
 add_library(sulfur::libsulfur ALIAS libsulfur)
 

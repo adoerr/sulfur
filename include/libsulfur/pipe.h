@@ -5,7 +5,7 @@
 namespace sulfur {
     class pipe {
     public:
-        explicit pipe(bool close_on_exec);
+        explicit pipe(bool close_on_exec = true);
         ~pipe();
 
         [[nodiscard]] int get_read() const { return fds_[read_fd]; }
@@ -15,8 +15,8 @@ namespace sulfur {
         void close_read();
         void close_write();
 
-        std::vector<std::byte> read();
-        void write(std::byte* from, std::size_t bytes);
+        [[nodiscard]] std::vector<std::byte> read() const;
+        void write(const std::byte* from, std::size_t bytes) const;
 
     private:
         static constexpr unsigned read_fd = 0;
