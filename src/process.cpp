@@ -30,20 +30,38 @@ sulfur::stop_reason::stop_reason(const int wait_status) {
 }
 
 std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::path& path) {
+    // create a pipe for error reporting from child to parent
+    pipe channel(true);
+
     pid_t pid{};
 
     if ((pid = fork()) < 0) {
         error::send_errno("fork failed");
     }
 
+    // child process
     if (pid == 0) {
+        channel.close_read();
+
         if (ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0) {
-            error::send_errno("ptrace traceme failed");
+            exit_with_error(channel, "ptrace traceme failed");
         }
 
         if (execlp(path.c_str(), path.c_str(), nullptr) < 0) {
-            error::send_errno("execlp failed");
+            exit_with_error(channel, "execlp failed");
         }
+    }
+
+    // parent process
+    channel.close_write();
+    auto error = channel.read();
+    channel.close_read();
+
+    if (!error.empty()) {
+        // wait for child to terminate in order to avoid a zombie process
+        waitpid(pid, nullptr, 0);
+        const auto msg = reinterpret_cast<char*>(error.data());
+        error::send(std::string(msg, msg + error.size()));
     }
 
     std::unique_ptr<process> proc(new process(pid, true));
