@@ -1,9 +1,18 @@
 #include <libsulfur/process.hpp>
 #include <libsulfur/error.hpp>
+#include <libsulfur/pipe.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <cstdio>
+
+namespace {
+    void exit_with_error(const sulfur::pipe& channel, std::string const& prefix) {
+        const auto msg = prefix + ": " + std::strerror(errno);
+        channel.write(reinterpret_cast<const std::byte*>(msg.data()), msg.size());
+        exit(1);
+    }
+}
 
 sulfur::stop_reason::stop_reason(const int wait_status) {
     if (WIFEXITED(wait_status)) {
