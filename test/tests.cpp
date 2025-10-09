@@ -21,12 +21,19 @@ namespace {
         const size_t idx_stat = line.rfind(')') + 2;
         return line[idx_stat];
     }
+}
 
-    TEST_CASE("process::launch success", "[process]") {
-        const auto proc = process::launch("yes");
-        REQUIRE(process_exists(proc->pid()));
-    }
+TEST_CASE("process::launch success", "[process]") {
+    const auto proc = process::launch("yes");
+    REQUIRE(process_exists(proc->pid()));
+}
 
-    TEST_CASE("process::launch failure", "[process]") {
-        REQUIRE_THROWS_AS(process::launch("/nonexistent/path/to/executable"), error);
-    }
+TEST_CASE("process::launch failure", "[process]") {
+    REQUIRE_THROWS_AS(process::launch("/nonexistent/path/to/executable"), error);
+}
+
+TEST_CASE("process::attach success", "[process]") {
+    const auto exec = process::launch("yes", false);
+    auto proc = process::attach(exec->pid());
+    REQUIRE((process_status(exec->pid())) == 't');
+}
