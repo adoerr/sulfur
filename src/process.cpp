@@ -29,7 +29,7 @@ sulfur::stop_reason::stop_reason(const int wait_status) {
     }
 }
 
-std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::path& path) {
+std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::path& path, const bool debug) {
     // create a pipe for error reporting from child to parent
     pipe channel(true);
 
@@ -43,7 +43,7 @@ std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::
     if (pid == 0) {
         channel.close_read();
 
-        if (ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0) {
+        if (debug and ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0) {
             exit_with_error(channel, "ptrace traceme failed");
         }
 
@@ -64,8 +64,11 @@ std::unique_ptr<sulfur::process> sulfur::process::launch(const std::filesystem::
         error::send(std::string(msg, msg + error.size()));
     }
 
-    std::unique_ptr<process> proc(new process(pid, true));
-    proc->wait_on_signal();
+    std::unique_ptr<process> proc(new process(pid, true, debug));
+
+    if (debug) {
+        proc->wait_on_signal();
+    }
 
     return proc;
 }
@@ -79,7 +82,7 @@ std::unique_ptr<sulfur::process> sulfur::process::attach(const pid_t pid) {
         error::send_errno("ptrace attach failed");
     }
 
-    std::unique_ptr<process> proc(new process(pid, false));
+    std::unique_ptr<process> proc(new process(pid, false, true));
     proc->wait_on_signal();
 
     return proc;
@@ -89,14 +92,16 @@ sulfur::process::~process() {
     if (pid_ != 0) {
         int status;
 
-        // for PTRACE_DETACH to work, the process must be stopped
-        if (state_ == process_state::running) {
-            kill(pid_, SIGSTOP);
-            waitpid(pid_, &status, 0);
-        }
+        if (is_attached_) {
+            // for PTRACE_DETACH to work, the process must be stopped
+            if (state_ == process_state::running) {
+                kill(pid_, SIGSTOP);
+                waitpid(pid_, &status, 0);
+            }
 
-        ptrace(PTRACE_DETACH, pid_, nullptr, nullptr);
-        kill(pid_, SIGCONT);
+            ptrace(PTRACE_DETACH, pid_, nullptr, nullptr);
+            kill(pid_, SIGCONT);
+        }
 
         if (terminate_on_end_) {
             kill(pid_, SIGKILL);

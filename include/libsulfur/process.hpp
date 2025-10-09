@@ -23,7 +23,7 @@ namespace sulfur {
     public:
         ~process();
 
-        static std::unique_ptr<process> launch(const std::filesystem::path& path);
+        static std::unique_ptr<process> launch(const std::filesystem::path& path, bool debug = true);
         static std::unique_ptr<process> attach(pid_t pid);
 
         void resume();
@@ -37,11 +37,13 @@ namespace sulfur {
         process& operator=(const process&) = delete;
 
     private:
-        process(const pid_t pid, const bool terminate_on_end) : pid_(pid), terminate_on_end_(terminate_on_end) {
+        process(const pid_t pid, const bool terminate_on_end, const bool is_attached) : pid_(pid),
+            terminate_on_end_(terminate_on_end), is_attached_(is_attached) {
         };
 
         pid_t pid_{0};
         bool terminate_on_end_{true};
+        bool is_attached_{true};
         process_state state_{process_state::stopped};
     };
 } // namespace sulfur
