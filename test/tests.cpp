@@ -43,3 +43,20 @@ TEST_CASE("process::attach invalid PID", "[process]") {
     REQUIRE_THROWS_AS(process::attach(0), error);
     REQUIRE_THROWS_AS(process::attach(999999), error); // unlikely to exist
 }
+
+TEST_CASE("process::resume success", "[process]") {
+    {
+        const auto proc = process::launch("targets/looper");
+        proc->resume();
+        const auto status = process_status(proc->pid());
+        REQUIRE((status == 'R' || status == 'S'));
+    }
+
+    {
+        const auto target = process::launch("targets/looper", false);
+        const auto proc = process::attach(target->pid());
+        proc->resume();
+        const auto status = process_status(proc->pid());
+        REQUIRE((status == 'R' || status == 'S'));
+    }
+}
